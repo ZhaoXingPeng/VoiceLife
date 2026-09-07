@@ -1,0 +1,120 @@
+import importlib.util
+import pathlib
+import unittest
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+SPEC = importlib.util.spec_from_file_location("start_im_pairing", ROOT / "scripts" / "start_im_pairing.py")
+assert SPEC and SPEC.loader
+PAIRING = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(PAIRING)
+
+
+class StartImPairingTest(unittest.TestCase):
+    def test_payload_is_fixed_size_and_contains_no_credentials(self):
+        self.assertEqual(PAIRING.trigger_payload(5), b"VLP1\x05" + b"\x00" * 7)
+        self.assertEqual(len(PAIRING.trigger_payload(10)), 12)
+
+    def test_expiry_is_bounded(self):
+        for invalid in (0, 11, -1):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                PAIRING.trigger_payload(invalid)
+
+    def test_extracts_only_sanitized_board_results(self):
+        self.assertEqual(
+            PAIRING.parse_pairing_line(
+                b"I VoiceLifeIm: IM_PAIRING_CODE=123456 expires_at=2026-08-03T00:05:00.000Z\r\n"
+            ),
+            {"code": "123456", "expires_at": "2026-08-03T00:05:00.000Z"},
+        )
+        self.assertEqual(
+            PAIRING.parse_pairing_line(b"I VoiceLifeIm: IM_PAIRING_STATUS=confirmed\r\n"),
+            {"status": "confirmed"},
+        )
+        self.assertEqual(
+            PAIRING.parse_pairing_line(
+                "I VoiceLifeIm: IM_PAIRING_SCOPE device_id=device-1 user_id=用户 1\r\n".encode()
+            ),
+            {"device_id": "device-1", "user_id": "用户 1"},
+        )
+        self.assertIsNone(PAIRING.parse_pairing_line(b"Authorization: Bearer secret\r\n"))
+
+    def test_auth_smoke_requires_expected_registered_scope(self):
+        with self.assertRaises(SystemExit):
+            PAIRING.parse_args(["--port", "/dev/null", "--auth-smoke"])
+        args = PAIRING.parse_args(
+            [
+                "--port",
+                "/dev/null",
+                "--auth-smoke",
+                "--expected-device-id",
+                "device-1",
+                "--expected-user-id",
+                "user-1",
+            ]
+        )
+        self.assertEqual(args.expected_device_id, "device-1")
+        self.assertEqual(args.expected_user_id, "user-1")
+
+    def test_hil_lifecycle_requires_code_matching_scope_pending_and_expired(self):
+        lifecycle = PAIRING.PairingLifecycle("device-1", "user-1")
+        lifecycle.observe({"device_id": "device-1", "user_id": "user-1"})
+        lifecycle.observe({"code": "123456", "expires_at": "2026-08-03T00:01:00.000Z"})
+        lifecycle.observe({"status": "pending"})
+        lifecycle.observe({"status": "pending"})
+        lifecycle.observe({"status": "pending"})
+        lifecycle.observe({"status": "expired"})
+        self.assertTrue(lifecycle.complete)
+        self.assertEqual(lifecycle.public_markers, ["scope_matched", "code_valid", "pending", "expired"])
+
+    def test_hil_lifecycle_rejects_missing_order_mismatched_scope_and_wrong_terminal(self):
+        cases = (
+            (
+                [
+                    {"device_id": "device-1", "user_id": "user-1"},
+                    {"code": "123456", "expires_at": "2026-08-03T00:01:00.000Z"},
+                    {"status": "expired"},
+                ],
+                True,
+            ),
+            (
+                [
+                    {"device_id": "another-device", "user_id": "user-1"},
+                    {"code": "123456", "expires_at": "2026-08-03T00:01:00.000Z"},
+                    {"status": "pending"},
+                    {"status": "expired"},
+                ],
+                True,
+            ),
+            (
+                [
+                    {"device_id": "device-1", "user_id": "user-1"},
+                    {"code": "123456", "expires_at": "2026-08-03T00:01:00.000Z"},
+                    {"status": "pending"},
+                    {"status": "confirmed"},
+                ],
+                True,
+            ),
+            (
+                [
+                    {"device_id": "device-1", "user_id": "user-1"},
+                    {"code": "123456", "expires_at": "2026-08-03T00:01:00.000Z"},
+                    {"status": "pending"},
+                ],
+                False,
+            ),
+        )
+        for events, raises in cases:
+            with self.subTest(events=events):
+                lifecycle = PAIRING.PairingLifecycle("device-1", "user-1")
+                if raises:
+                    with self.assertRaises(PAIRING.PairingLifecycleError):
+                        for event in events:
+                            lifecycle.observe(event)
+                else:
+                    for event in events:
+                        lifecycle.observe(event)
+                    self.assertFalse(lifecycle.complete)
+
+
+if __name__ == "__main__":
+    unittest.main()

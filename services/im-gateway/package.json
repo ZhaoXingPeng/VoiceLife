@@ -1,0 +1,42 @@
+{
+  "name": "@voicelife/im-gateway",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.17.1",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "docs:check": "node --test scripts/check-public-api-docs.test.mjs && node scripts/check-public-api-docs.mjs",
+    "e2e:host": "pnpm run build && node scripts/run-host-e2e.mjs",
+    "e2e:recovery": "pnpm run build && node scripts/run-recovery-e2e.mjs",
+    "dev:wechat": "pnpm run build && node --env-file=../../.env scripts/run-wechat-dev-harness.mjs",
+    "device": "node scripts/run-device-cli.mjs",
+    "start": "pnpm run build && node --env-file-if-exists=../../.env scripts/start-gateway.mjs",
+    "test": "pnpm run build && node test/run-tests.mjs && node --test --test-concurrency=1 test/*.test.mjs",
+    "coverage": "pnpm run build && c8 --all --clean --temp-directory coverage/.tmp --extension .js --include 'dist/**/*.js' --exclude 'dist/**/*.d.ts' --exclude 'scripts/**' --reporter=none --reports-dir coverage node test/run-tests.mjs && c8 --all --clean false --temp-directory coverage/.tmp --extension .js --include 'dist/**/*.js' --exclude 'dist/**/*.d.ts' --exclude 'scripts/**' --reporter=none --reports-dir coverage node --test --test-concurrency=1 test/*.test.mjs && c8 report --temp-directory coverage/.tmp --exclude 'scripts/**' --reporter=lcov --reporter=text --reports-dir coverage",
+    "format:check": "prettier --check \"src/**/*.ts\" \"scripts/*.mjs\" \"test/*.mjs\" \"*.{mjs,json,md}\"",
+    "lint": "eslint src test scripts",
+    "ci": "pnpm run format:check && pnpm run lint && pnpm run check && pnpm run docs:check && pnpm run test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.13.3",
+    "@types/pg": "^8.21.0",
+    "@types/ws": "8.5.14",
+    "c8": "^12.0.0",
+    "eslint": "^10.8.0",
+    "prettier": "^3.5.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.46.0"
+  },
+  "dependencies": {
+    "@koishijs/core": "4.18.11",
+    "fast-xml-parser": "5.10.1",
+    "pg": "^8.23.0",
+    "ws": "8.21.2"
+  }
+}

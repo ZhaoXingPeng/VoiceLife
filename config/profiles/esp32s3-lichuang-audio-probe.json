@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "esp32s3-lichuang-audio-probe",
+  "target": "esp32s3",
+  "adapters": {
+    "audio": {
+      "driver": "esp32s3-pcm-probe",
+      "capabilities": ["pcm-probe", "external-codec-duplex"],
+      "configRef": "env://VOICELIFE_AUDIO_PROFILE"
+    },
+    "speech": {
+      "driver": "scaffold",
+      "capabilities": []
+    },
+    "storage": {
+      "driver": "fatfs-sqlite",
+      "capabilities": ["persistent-sqlite"]
+    },
+    "im": {
+      "driver": "disabled",
+      "capabilities": []
+    }
+  },
+  "sdkconfig": [
+    "CONFIG_LOG_DEFAULT_LEVEL_INFO=y",
+    "CONFIG_VOICELIFE_AUDIO_PROBE=y",
+    "CONFIG_VOICELIFE_AUDIO_PROBE_PROFILE_LICHUANG=y",
+    "CONFIG_FATFS_SECTOR_4096=y",
+    "CONFIG_WL_SECTOR_SIZE_4096=y",
+    "CONFIG_VOICELIFE_STORAGE_FATFS=y",
+    "CONFIG_VOICELIFE_STORAGE_SQLITE=y"
+  ]
+}

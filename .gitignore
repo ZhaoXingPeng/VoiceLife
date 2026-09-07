@@ -1,0 +1,39 @@
+local/
+
+# ESP-IDF generated files
+build/
+build-*/
+sdkconfig
+sdkconfig.old
+managed_components/
+dependencies.lock
+
+# Host build and editor files
+build-host*/
+build-coverage/
+dist/
+coverage/
+.cache/
+.clangd/
+.vscode/
+.DS_Store
+__pycache__/
+*.py[cod]
+*.gcda
+*.gcno
+.pytest_cache/
+.pnpm-store/
+
+# Local secrets and generated binaries
+.env
+*.bin
+!components/voicelife_display_esp/assets/esp-sparkbot/fonts/font_noto_sans_common_16_4.bin
+audio-debug*.wav
+
+# SQLite 固定版本脚本生成的 amalgamation 与 ESP-IDF 组件清单
+/third_party/sqlite3/CMakeLists.txt
+/third_party/sqlite3/sqlite3.c
+/third_party/sqlite3/sqlite3.h
+
+# Claude Code worktrees and session artifacts
+.claude/
