@@ -37,3 +37,4 @@ audio-debug*.wav
 
 # Claude Code worktrees and session artifacts
 .claude/
+!components/voicelife_display_esp/assets/esp-sparkbot/fonts/font_noto_sans_common_14_1.bin
