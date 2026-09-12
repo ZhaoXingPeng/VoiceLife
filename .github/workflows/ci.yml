@@ -171,7 +171,10 @@ jobs:
           use_oidc: true
           files: coverage/cpp.xml
           flags: cpp
-          fail_ci_if_error: true
+          # Codecov project provisioning is external to this repository. Keep
+          # compilation and report generation mandatory while treating upload
+          # outages as warnings until the project is provisioned.
+          fail_ci_if_error: false
           verbose: true
       - name: 上传 TypeScript 覆盖率报告
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
@@ -179,7 +182,7 @@ jobs:
           use_oidc: true
           files: services/im-gateway/coverage/lcov.info
           flags: typescript
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
 
   host-tests:
